@@ -53,6 +53,11 @@ spec:
             - name: config
               mountPath: /etc/agntcy/discovery
               readOnly: true
+            {{- if .Values.discovery.spire.enabled }}
+            - name: spire-agent-socket
+              mountPath: /run/spire/agent-sockets
+              readOnly: true
+            {{- end }}
           {{- with .Values.discovery.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
@@ -61,6 +66,12 @@ spec:
         - name: config
           configMap:
             name: {{ include "runtime.discovery.fullname" . }}
+        {{- if .Values.discovery.spire.enabled }}
+        - name: spire-agent-socket
+          csi:
+            driver: csi.spiffe.io
+            readOnly: true
+        {{- end }}
       {{- with .Values.discovery.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
