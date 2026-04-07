@@ -84,6 +84,8 @@ func bindCredentialEnvVars(v *viper.Viper) {
 	_ = v.BindEnv("server.database.postgres.username")
 	_ = v.BindEnv("server.database.postgres.password")
 
+	_ = v.BindEnv("server.routing.bootstrap_peers")
+
 	_ = v.BindEnv("server.store.oci.auth_config.username")
 	_ = v.BindEnv("server.store.oci.auth_config.password")
 	_ = v.BindEnv("server.store.oci.auth_config.access_token")
@@ -106,6 +108,7 @@ func resolveRelativePaths(cfg *DaemonConfig) {
 	}
 
 	cfg.Server.Store.OCI.LocalDir = resolve(cfg.Server.Store.OCI.LocalDir)
+	cfg.Server.Routing.KeyPath = resolve(cfg.Server.Routing.KeyPath)
 	cfg.Server.Routing.DatastoreDir = resolve(cfg.Server.Routing.DatastoreDir)
 	cfg.Server.Database.SQLite.Path = resolve(cfg.Server.Database.SQLite.Path)
 }
