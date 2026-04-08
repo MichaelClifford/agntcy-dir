@@ -11,7 +11,7 @@ import (
 
 // Config holds storage configuration.
 type Config struct {
-	// Type is the storage backend type ("etcd" or "crd").
+	// Type is the storage backend type ("etcd", "crd", "sqlite").
 	Type types.StoreType `json:"type" mapstructure:"type"`
 
 	// Etcd configuration.

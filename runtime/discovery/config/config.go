@@ -118,6 +118,7 @@ func LoadConfig() (*Config, error) {
 	// Docker configuration
 	//
 	v.SetDefault("runtime.docker.host", docker.DefaultHost)
+	v.SetDefault("runtime.docker.host_mode", docker.DefaultHostMode)
 	v.SetDefault("runtime.docker.label_key", docker.DefaultLabelKey)
 	v.SetDefault("runtime.docker.label_value", docker.DefaultLabelValue)
 
