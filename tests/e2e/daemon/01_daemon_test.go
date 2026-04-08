@@ -5,9 +5,11 @@ package daemon
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	corev1 "github.com/agntcy/dir/api/core/v1"
 	signv1 "github.com/agntcy/dir/api/sign/v1"
@@ -16,6 +18,13 @@ import (
 	"github.com/agntcy/dir/tests/e2e/shared/utils"
 	ginkgo "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+)
+
+var (
+	// Sample record for runtim discovery.
+	runRutimeTests         = os.Getenv("DAEMON_E2E_RUN_RUNTIME_TESTS") == "true"
+	sampleRuntimeRecord    = testdata.ExpectedRecordV100JSON
+	sampleRuntimeRecordCID = "baeareiabbog2umgduqhlcb64fzt6adn34kblzvru3fdzkl75hjhwt6h3da"
 )
 
 const cosignTestPassword = "testpassword"
@@ -135,6 +144,57 @@ var _ = ginkgo.Describe("Daemon e2e", ginkgo.Ordered, ginkgo.Serial, func() {
 			gomega.Expect(resp).NotTo(gomega.BeNil())
 			gomega.Expect(resp.GetSuccess()).To(gomega.BeTrue(), "signature verification should succeed")
 			gomega.Expect(resp.GetSigners()).NotTo(gomega.BeEmpty())
+		})
+	})
+
+	ginkgo.Context("runtime workflow", func() {
+		ginkgo.BeforeAll(func() {
+			if !runRutimeTests {
+				ginkgo.Skip("skipping runtime tests")
+			}
+		})
+
+		ginkgo.It("runtime should discover docker workloads", func() {
+			// Push sample record to ensure there's something to discover and pull back for verification
+			record, err := corev1.UnmarshalRecord(sampleRuntimeRecord)
+			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+			recordRef, err := c.Push(ctx, record)
+			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+			gomega.Expect(recordRef).NotTo(gomega.BeNil())
+			gomega.Expect(recordRef.GetCid()).To(gomega.Equal(sampleRuntimeRecordCID))
+
+			// Use eventually to allow some time for the runtime to discover the workload and its service details.
+			// The test will poll the ListWorkloads API until it finds the expected workload with the correct OASF data, or until it times out.
+			gomega.Eventually(func(g gomega.Gomega) {
+				// Discover runtimes workloads
+				discoverResp, err := c.ListWorkloads(ctx, nil)
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+				g.Expect(discoverResp).NotTo(gomega.BeNil())
+				g.Expect(discoverResp).To(gomega.HaveLen(1))
+
+				// Validate workload
+				workload := discoverResp[0]
+				g.Expect(workload.GetType()).To(gomega.Equal("container"))
+				g.Expect(workload.GetRuntime()).To(gomega.Equal("docker"))
+				g.Expect(workload.GetLabels()).To(gomega.HaveKeyWithValue("test.org.agntcy/agent-type", "a2a"))
+				g.Expect(workload.GetLabels()).To(gomega.HaveKeyWithValue("test.org.agntcy/agent-record", sampleRuntimeRecordCID))
+				g.Expect(workload.GetServices()).To(gomega.Not(gomega.BeNil()))
+
+				// Validate OASF service discovery data
+				oasfService := workload.GetServices().GetOasf().AsMap()
+				g.Expect(oasfService).NotTo(gomega.BeNil())
+				g.Expect(oasfService).To(gomega.HaveKeyWithValue("cid", sampleRuntimeRecordCID))
+				g.Expect(oasfService).To(gomega.HaveKey("record"))
+
+				// Validate discovered OASF record matches the original record
+				oasfRecord, err := json.Marshal(oasfService["record"])
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+				g.Expect(oasfRecord).To(gomega.MatchJSON(sampleRuntimeRecord))
+			}).
+				WithPolling(10 * time.Second).
+				WithTimeout(2 * time.Minute).
+				Should(gomega.Succeed())
 		})
 	})
 })
