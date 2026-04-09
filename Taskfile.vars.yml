@@ -17,13 +17,13 @@ vars:
   # renovate: datasource=go depName=github.com/project-zot/zot versioning=semver
   ZOT_VERSION: "2.1.15"
   # renovate: datasource=go depName=github.com/spiffe/spire versioning=semver
-  SPIRE_VERSION: "1.14.4"
+  SPIRE_VERSION: "1.14.5"
   # renovate: datasource=go depName=github.com/regclient/regclient versioning=semver
   REGSYNC_VERSION: "v0.11.2"
   # renovate: datasource=docker depName=docker.io/bitnami/postgresql
-  POSTGRESQL_VERSION: "latest@sha256:c30c796dcf96a67a405b905bf6aaf8d6c957d5c2fe729db6e67e2760e21fd9f8"
+  POSTGRESQL_VERSION: "latest@sha256:228ef23ed3b9eb678ae557f3dcaf80fe1d217fb9e0a4fcb75279b2b2b858c3ff"
   # renovate: datasource=docker depName=docker.io/envoyproxy/envoy
-  ENVOY_VERSION: "v1.37-latest"
+  ENVOY_VERSION: "distroless-v1.37-latest"
 
   ## Container images for vulnerability scanning
   VULN_SCAN_IMAGES:
@@ -65,7 +65,7 @@ vars:
   PROTOC_BIN: "{{ .BIN_DIR }}/protoc-{{.PROTOC_VERSION}}"
   BUFBUILD_VERSION: "1.66.1"
   BUFBUILD_BIN: "{{ .BIN_DIR }}/bufbuild-{{.BUFBUILD_VERSION}}"
-  GO_VERSION: "1.26.1"
+  GO_VERSION: "1.26.2"
   MULTIMOD_VERSION: "0.29.0"
   MULTIMOD_BIN: "{{ .BIN_DIR }}/multimod-{{.MULTIMOD_VERSION}}"
   GOLANGCI_LINT_VERSION: "2.11.3"
