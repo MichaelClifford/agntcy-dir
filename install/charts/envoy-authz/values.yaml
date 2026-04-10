@@ -149,6 +149,16 @@ authServer:
       cpu: 200m
       memory: 256Mi
 
+# OpenShift Route configuration (optional)
+# Creates an OpenShift Route to expose the Envoy gateway externally.
+# Only applicable on OpenShift clusters. Disabled by default.
+route:
+  enabled: false
+  # host: dir-gateway.apps.example.com
+  annotations: {}
+  tls:
+    termination: passthrough
+
 # Ingress configuration (optional)
 ingress:
   enabled: false

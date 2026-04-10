@@ -1,0 +1,42 @@
+{{/*
+Copyright AGNTCY Contributors (https://github.com/agntcy)
+SPDX-License-Identifier: Apache-2.0
+*/}}
+
+{{- if .Values.route }}
+{{- if .Values.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "envoy-authz.fullname" . }}
+  labels:
+    {{- include "envoy-authz.envoyLabels" . | nindent 4 }}
+  annotations:
+    {{- if ne (.Values.route.tls.termination | default "edge") "passthrough" }}
+    # Required for gRPC (HTTP/2) through OpenShift's HAProxy router (edge mode only)
+    haproxy.router.openshift.io/backend-protocol: h2c
+    {{- end }}
+    {{- with .Values.route.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.route.host }}
+  host: {{ .Values.route.host }}
+  {{- end }}
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: {{ include "envoy-authz.fullname" . }}-envoy
+    weight: 100
+  {{- if .Values.route.tls }}
+  tls:
+    {{- toYaml .Values.route.tls | nindent 4 }}
+  {{- else }}
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}
+{{- end }}

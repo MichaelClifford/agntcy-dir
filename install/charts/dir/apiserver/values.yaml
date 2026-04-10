@@ -409,6 +409,17 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
+# OpenShift Route configuration (optional)
+# Creates an OpenShift Route to expose the gRPC API externally.
+# Only applicable on OpenShift clusters. Disabled by default.
+route:
+  enabled: false
+  # host: dir-api.apps.example.com
+  annotations: {}
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
 ingress:
   enabled: false
   className: ""
