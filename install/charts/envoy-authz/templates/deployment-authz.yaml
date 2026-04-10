@@ -66,3 +66,5 @@ spec:
           items:
           - key: config.yaml
             path: config.yaml
+          - key: rbac-config.yaml
+            path: rbac-config.yaml

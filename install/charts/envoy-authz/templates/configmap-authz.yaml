@@ -97,3 +97,51 @@ data:
       {{- else }}
       {}
       {{- end }}
+
+  # RBAC config (required by envoy-authz image for role-based access control)
+  rbac-config.yaml: |
+    userDenyList:
+      {{- if .Values.authServer.oidc.userDenyList }}
+      {{- range .Values.authServer.oidc.userDenyList }}
+      - {{ . | quote }}
+      {{- end }}
+      {{- else }}
+      []
+      {{- end }}
+
+    roles:
+      {{- if .Values.authServer.oidc.roles }}
+      {{- range $roleName, $role := .Values.authServer.oidc.roles }}
+      {{ $roleName }}:
+        allowedMethods:
+          {{- range $role.allowedMethods }}
+          - {{ . | quote }}
+          {{- end }}
+        {{- if $role.users }}
+        users:
+          {{- range $role.users }}
+          - {{ . | quote }}
+          {{- end }}
+        {{- else }}
+        users: []
+        {{- end }}
+        {{- if $role.clients }}
+        clients:
+          {{- range $role.clients }}
+          - {{ . | quote }}
+          {{- end }}
+        {{- else }}
+        clients: []
+        {{- end }}
+        {{- if $role.githubWorkflows }}
+        githubWorkflows:
+          {{- range $role.githubWorkflows }}
+          - {{ . | quote }}
+          {{- end }}
+        {{- else }}
+        githubWorkflows: []
+        {{- end }}
+      {{- end }}
+      {{- else }}
+      {}
+      {{- end }}
