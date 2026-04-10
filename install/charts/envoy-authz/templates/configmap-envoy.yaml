@@ -31,7 +31,20 @@ data:
               address: 0.0.0.0
               port_value: 8080
           filter_chains:
-            - filters:
+            - {{- if .Values.envoy.tls.enabled }}
+              transport_socket:
+                name: envoy.transport_sockets.tls
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+                  common_tls_context:
+                    alpn_protocols: ["h2", "http/1.1"]
+                    tls_certificates:
+                      - certificate_chain:
+                          filename: /etc/envoy/tls/tls.crt
+                        private_key:
+                          filename: /etc/envoy/tls/tls.key
+              {{- end }}
+              filters:
                 - name: envoy.filters.network.http_connection_manager
                   typed_config:
                     "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager

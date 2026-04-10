@@ -69,6 +69,14 @@ envoy:
       cpu: 500m
       memory: 512Mi
 
+  # TLS configuration for Envoy listener (optional)
+  # Enable when using OpenShift passthrough routes or any scenario where
+  # Envoy must serve TLS directly (required for gRPC over HTTP/2 on OpenShift).
+  # Requires a Kubernetes TLS secret with tls.crt and tls.key.
+  tls:
+    enabled: false
+    secretName: "envoy-tls-cert"
+
   # Admin interface (for debugging)
   admin:
     enabled: true
