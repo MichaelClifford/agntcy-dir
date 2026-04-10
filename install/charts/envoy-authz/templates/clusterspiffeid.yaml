@@ -9,7 +9,9 @@ kind: ClusterSPIFFEID
 metadata:
   name: {{ include "envoy-authz.fullname" . }}-envoy-gateway
 spec:
+  {{- if ne .Values.envoy.spiffe.className "none" }}
   className: {{ .Values.envoy.spiffe.className | default "dir-spire" }}
+  {{- end }}
   spiffeIDTemplate: "spiffe://{{ .Values.envoy.spiffe.trustDomain }}/ns/{{ .Release.Namespace }}/sa/{{ include "envoy-authz.envoyServiceAccountName" . }}"
   podSelector:
     matchLabels:

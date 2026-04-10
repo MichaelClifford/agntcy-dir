@@ -5,7 +5,9 @@ kind: ClusterSPIFFEID
 metadata:
   name: {{ include "chart.reconcilerName" . }}
 spec:
+  {{- if ne .Values.spire.className "none" }}
   className: {{ .Values.spire.className | default (printf "%s-spire" .Release.Namespace) }}
+  {{- end }}
   podSelector:
     matchExpressions:
     - key: app.kubernetes.io/name
