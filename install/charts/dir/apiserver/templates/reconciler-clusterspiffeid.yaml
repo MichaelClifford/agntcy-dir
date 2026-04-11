@@ -8,6 +8,10 @@ spec:
   {{- if ne .Values.spire.className "none" }}
   className: {{ .Values.spire.className | default (printf "%s-spire" .Release.Namespace) }}
   {{- end }}
+  {{- if .Values.spire.namespaceSelector }}
+  namespaceSelector:
+    {{- toYaml .Values.spire.namespaceSelector | nindent 4 }}
+  {{- end }}
   podSelector:
     matchExpressions:
     - key: app.kubernetes.io/name

@@ -12,6 +12,10 @@ spec:
   {{- if ne .Values.envoy.spiffe.className "none" }}
   className: {{ .Values.envoy.spiffe.className | default "dir-spire" }}
   {{- end }}
+  {{- if .Values.envoy.spiffe.namespaceSelector }}
+  namespaceSelector:
+    {{- toYaml .Values.envoy.spiffe.namespaceSelector | nindent 4 }}
+  {{- end }}
   spiffeIDTemplate: "spiffe://{{ .Values.envoy.spiffe.trustDomain }}/ns/{{ .Release.Namespace }}/sa/{{ include "envoy-authz.envoyServiceAccountName" . }}"
   podSelector:
     matchLabels:
