@@ -302,6 +302,6 @@ data:
                   - endpoint:
                       address:
                         pipe:
-                          path: /run/spire/agent-sockets/api.sock
+                          path: {{ .Values.envoy.spiffe.socketPath | default "/run/spire/agent-sockets/api.sock" }}
         {{- end }}
 
