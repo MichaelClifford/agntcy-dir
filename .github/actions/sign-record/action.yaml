@@ -19,13 +19,17 @@ inputs:
     description: Optional Directory server address (host:port). Uses dirctl default if omitted.
     required: false
     default: ""
-  github_token:
-    description: Optional GitHub PAT for Directory authentication
+  auth_token:
+    description: Optional OIDC bearer token for Directory authentication
     required: false
     default: ""
   oidc_client_id:
     description: Workflow identity for keyless signing. Example https://github.com/OWNER/REPO/.github/workflows/YOUR_WORKFLOW.yaml@REF
     required: true
+  dirctl_path:
+    description: Optional absolute path to the dirctl binary. Defaults to PATH lookup.
+    required: false
+    default: ""
 
 outputs:
   success:
@@ -47,8 +51,9 @@ runs:
       env:
         CIDS: ${{ inputs.cids }}
         SERVER_ADDR: ${{ inputs.server_addr }}
-        GITHUB_TOKEN: ${{ inputs.github_token }}
+        AUTH_TOKEN: ${{ inputs.auth_token }}
         OIDC_CLIENT_ID: ${{ inputs.oidc_client_id }}
+        DIRCTL_PATH: ${{ inputs.dirctl_path }}
       run: |
         chmod +x "${{ github.action_path }}/sign.sh"
         "${{ github.action_path }}/sign.sh"
