@@ -19,6 +19,21 @@ type Formatter interface {
 	FileExtension() string
 }
 
+// BatchFormatter extends Formatter for formats that need custom multi-record
+// export behaviour (e.g. merging MCP servers into one config, or creating
+// per-skill subdirectories).
+// Formatters that do not implement BatchFormatter get per-record file writing
+// via DefaultBatchExport.
+type BatchFormatter interface {
+	Formatter
+
+	// FormatBatch exports multiple records to outputDir.
+	// When allVersions is true, the version is included in filenames to
+	// preserve every version; otherwise only the latest per name is kept.
+	// Returns the number of records successfully exported.
+	FormatBatch(records []*corev1.Record, outputDir string, allVersions bool) (int, error)
+}
+
 const ExtJSON = ".json"
 
 var (
