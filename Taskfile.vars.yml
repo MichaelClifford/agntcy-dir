@@ -22,8 +22,6 @@ vars:
   REGSYNC_VERSION: "v0.11.3"
   # renovate: datasource=docker depName=docker.io/bitnami/postgresql
   POSTGRESQL_VERSION: "latest@sha256:d0fd908dfe8697467f930c1894fcdbbbbd093e3dcf104204a00121ffef017749"
-  # renovate: datasource=docker depName=docker.io/envoyproxy/envoy
-  ENVOY_VERSION: "distroless-v1.37-latest"
 
   ## Container images for vulnerability scanning
   VULN_SCAN_IMAGES:
@@ -34,7 +32,6 @@ vars:
     - "ghcr.io/spiffe/spire-server:{{.SPIRE_VERSION}}"
     - "ghcr.io/spiffe/spire-agent:{{.SPIRE_VERSION}}"
     - "docker.io/bitnami/postgresql:{{.POSTGRESQL_VERSION}}"
-    - "docker.io/envoyproxy/envoy:{{.ENVOY_VERSION}}"
 
   ## Image config
   BUILD_LDFLAGS: "-s -w -extldflags -static {{.VERSION_LDFLAGS}}"
@@ -46,7 +43,7 @@ vars:
   COVERAGE_IMAGE_TAG: "{{ .IMAGE_TAG | default .COMMIT_SHA }}-coverage"
   COVERAGE_IMAGE_BAKE_ENV: "IMAGE_REPO={{.IMAGE_REPO}} IMAGE_TAG={{.COVERAGE_IMAGE_TAG}}"
   COVERAGE_BAKE_ENV: '{{ .COVERAGE_IMAGE_BAKE_ENV }} BUILD_LDFLAGS="{{.BUILD_LDFLAGS}}"'
-  COVERAGE_PKGS: '{{ .COVERAGE_PKGS | default "github.com/agntcy/dir/api/...,github.com/agntcy/dir/cli/...,github.com/agntcy/dir/client/...,github.com/agntcy/dir/utils/..." }}'
+  COVERAGE_PKGS: '{{ .COVERAGE_PKGS | default "github.com/agntcy/dir/api/...,github.com/agntcy/dir/cli/...,github.com/agntcy/dir/client/...,github.com/agntcy/dir/server/...,github.com/agntcy/dir/reconciler/...,github.com/agntcy/dir/utils/..." }}'
 
   ## Dependency config
   RENOVATE_VERSION: "43.89.5"
