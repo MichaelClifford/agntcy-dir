@@ -1,0 +1,154 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+#
+# OpenShift-specific overrides for the Directory Service Helm chart.
+#
+# This file contains the values needed to deploy the core Directory Service
+# on an OpenShift cluster with SPIFFE/SPIRE mTLS authentication.
+#
+# IMPORTANT: External gRPC access requires the oidc-gateway deployed
+# separately with a TLS passthrough route. OpenShift's edge routes do not
+# reliably support gRPC (HTTP/2). See docs/openshift-install.md for details.
+#
+# Prerequisites:
+#   - SPIRE deployed on the cluster (server, agent, CSI driver, controller manager)
+#   - oidc-gateway deployed separately for external access
+#     (see https://github.com/agntcy/oidc-gateway)
+#
+# Usage:
+#   helm install dir-release ./install/charts/dir \
+#     -n agent-directory --create-namespace \
+#     -f install/charts/dir/values-openshift.yaml \
+#     -f install/charts/dir/my-values.yaml \
+#     --timeout 20m
+#
+# See docs/openshift-install.md for the full step-by-step guide.
+
+apiserver:
+  image:
+    pullPolicy: Always
+    # Remove default pull secret reference (not needed for public images)
+    pullSecrets: []
+
+  # OpenShift uses Routes, not NodePort
+  service:
+    type: ClusterIP
+
+  # OpenShift Route for direct gRPC access to the apiserver.
+  # NOTE: Edge routes do not reliably support gRPC (HTTP/2) on OpenShift.
+  # For external access, deploy the oidc-gateway with a TLS passthrough route.
+  # This route is useful for non-SPIRE deployments or internal testing only.
+  route:
+    enabled: false
+    # host: dir-api.<your-cluster-domain>
+    annotations: {}
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+
+  # -------------------------------------------------------------------------
+  # Authentication and Authorization
+  # -------------------------------------------------------------------------
+  # Enable SPIFFE-based mTLS authentication and Casbin authorization policies.
+  # Requires SPIRE to be deployed and spire.enabled=true below.
+  #
+  # NOTE: When authn is enabled, external clients cannot connect directly —
+  # only workloads with valid SPIFFE identities (e.g., the oidc-gateway) can
+  # reach the apiserver.
+  config:
+    authn:
+      enabled: true
+      # SPIRE agent socket path — must match the filename provided by the
+      # SPIFFE CSI driver. Check with a debug pod (see docs/openshift-install.md).
+      # Common values: api.sock (upstream SPIRE), spire-agent.sock (managed SPIRE operators)
+      socket_path: "unix:///run/spire/agent-sockets/<YOUR-SOCKET-FILENAME>"
+    authz:
+      enabled: true
+    # Point apiserver at the Helm-deployed PostgreSQL service.
+    # Format: <release-name>-postgresql
+    database:
+      postgres:
+        host: "<RELEASE-NAME>-postgresql"
+
+  # Authorization policies (Casbin CSV format).
+  # The first rule grants full access to workloads from your SPIRE trust domain.
+  # Additional rules grant public read access to specific API methods.
+  #
+  # Replace <YOUR-TRUST-DOMAIN> with the trust domain configured in your
+  # SPIRE server (see docs/openshift-install.md).
+  authz_policies_csv: |
+    p,<YOUR-TRUST-DOMAIN>,*
+    p,*,/agntcy.dir.store.v1.StoreService/Pull
+    p,*,/agntcy.dir.store.v1.StoreService/Push
+    p,*,/agntcy.dir.store.v1.StoreService/PullReferrer
+    p,*,/agntcy.dir.store.v1.StoreService/Lookup
+    p,*,/agntcy.dir.search.v1.SearchService/SearchCIDs
+    p,*,/agntcy.dir.search.v1.SearchService/SearchRecords
+    p,*,/agntcy.dir.sync.v1.SyncService/RequestRegistryCredentials
+
+  # -------------------------------------------------------------------------
+  # SPIRE / SPIFFE Configuration
+  # -------------------------------------------------------------------------
+  # Connects to an existing SPIRE instance on the cluster.
+  # The SPIFFE CSI driver mounts the workload API socket into each pod.
+  spire:
+    enabled: true
+
+    # Trust domain of your SPIRE server.
+    # Find it with:
+    #   oc get configmap -n <spire-namespace> spire-server -o yaml | grep trust_domain
+    trustDomain: "<YOUR-TRUST-DOMAIN>"
+
+    # Must match the SPIRE controller manager's className.
+    # Find it with:
+    #   oc get clusterspiffeids -o yaml | grep className
+    # Set to "none" to omit the field entirely (for classless SPIRE controllers).
+    className: "<YOUR-SPIRE-CLASS-NAME>"
+
+    # Restrict ClusterSPIFFEID to the deployment namespace.
+    # Required when the SPIRE controller manager uses namespace-scoped matching.
+    namespaceSelector:
+      matchExpressions:
+      - key: kubernetes.io/metadata.name
+        operator: In
+        values:
+        - "<NAMESPACE>"
+
+    # DNS SANs added to the SPIFFE X.509-SVID certificate.
+    # This should match the externally reachable hostname of the apiserver.
+    # Format: <release-name>-apiserver-<namespace>.<cluster-domain>
+    dnsNameTemplates:
+      - "<RELEASE-NAME>-apiserver-<NAMESPACE>.<YOUR-CLUSTER-DOMAIN>"
+
+  # Disable nginx Ingress — OpenShift uses Routes instead.
+  oasf:
+    ingress:
+      enabled: false
+
+  # -------------------------------------------------------------------------
+  # Reconciler
+  # -------------------------------------------------------------------------
+  # Ensure HOME is writable — OpenShift's restricted SCC assigns a random
+  # non-root UID that cannot write to /. Some containers attempt to create
+  # directories under $HOME on startup, which fails without this override.
+  extraEnv:
+    - name: HOME
+      value: /tmp
+
+  reconciler:
+    image:
+      repository: ghcr.io/agntcy/dir-reconciler
+      tag: latest
+      pullPolicy: Always
+    # Point reconciler at the Helm-deployed PostgreSQL service.
+    config:
+      database:
+        postgres:
+          host: "<RELEASE-NAME>-postgresql"
+
+  # -------------------------------------------------------------------------
+  # PostgreSQL
+  # -------------------------------------------------------------------------
+  # The Bitnami PostgreSQL subchart auto-detects OpenShift and adapts its
+  # security contexts via global.compatibility.openshift.adaptSecurityContext.
+  # No manual UID overrides are needed.
